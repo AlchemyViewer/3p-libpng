@@ -163,16 +163,18 @@ pushd "$PNG_SOURCE_DIR"
             # So, clear out bits that shouldn't affect our configure-directed build
             # but which do nonetheless.
             #
-            # unset DISTCC_HOSTS CC CXX CFLAGS CPPFLAGS CXXFLAGS
+            unset DISTCC_HOSTS CC CXX CFLAGS CPPFLAGS CXXFLAGS
 
-            # Prefer gcc-4.6 if available.
-            if [[ -x /usr/bin/gcc-4.6 && -x /usr/bin/g++-4.6 ]]; then
-                export CC=/usr/bin/gcc-4.6
-                export CXX=/usr/bin/g++-4.6
-            fi
-
-            # Default target per AUTOBUILD_ADDRSIZE
-            opts="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE $LL_BUILD_RELEASE}"
+            # Default target per autobuild build --address-size
+            opts="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE}"
+			DEBUG_COMMON_FLAGS="$opts -Og -g -fPIC -DPIC"
+			RELEASE_COMMON_FLAGS="$opts -O3 -g -fPIC -DPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2"
+			DEBUG_CFLAGS="$DEBUG_COMMON_FLAGS"
+			RELEASE_CFLAGS="$RELEASE_COMMON_FLAGS"
+            DEBUG_CXXFLAGS="$DEBUG_COMMON_FLAGS -std=c++17"
+			RELEASE_CXXFLAGS="$RELEASE_COMMON_FLAGS -std=c++17"
+            DEBUG_CPPFLAGS="-DPIC"
+			RELEASE_CPPFLAGS="-DPIC"
 
             # Handle any deliberate platform targeting
             if [ -z "${TARGET_CPPFLAGS:-}" ]; then
@@ -202,22 +204,56 @@ pushd "$PNG_SOURCE_DIR"
             # * Producing only static libraries.
             # * Builds all bin/* targets with static libraries.
 
-            # build the release version and link against the release zlib
-            CFLAGS="$opts" \
-                CXXFLAGS="$opts" \
-                CPPFLAGS="${CPPFLAGS:-} -I$stage/packages/include/zlib" \
-                LDFLAGS="-L$stage/packages/lib/release" \
-                ./configure --prefix="$stage" --libdir="$stage/lib/release" \
-                            --includedir="$stage/include" --enable-shared=no --with-pic
+            # Fix up path for pkgconfig
+            if [ -d "$stage/packages/lib/release/pkgconfig" ]; then
+                fix_pkgconfig_prefix "$stage/packages"
+            fi
+
+            OLD_PKG_CONFIG_PATH="${PKG_CONFIG_PATH:-}"
+
+            # force regenerate autoconf
+            autoreconf -fvi
+
+            # debug configure and build
+            export PKG_CONFIG_PATH="$stage/packages/lib/debug/pkgconfig:${OLD_PKG_CONFIG_PATH}"
+
+            # build the debug version and link against the debug zlib
+            CFLAGS="$DEBUG_CFLAGS" \
+                CXXFLAGS="$DEBUG_CXXFLAGS" \
+                CPPFLAGS="${CPPFLAGS:-} ${DEBUG_CPPFLAGS} -I$stage/packages/include/zlib" \
+                LDFLAGS="-L$stage/packages/lib/debug" \
+                ./configure --enable-shared=no --with-pic \
+                    --prefix="\${AUTOBUILD_PACKAGES_DIR}" --libdir="\${prefix}/lib/debug"
             make
-            make install
+            make install DESTDIR="$stage"
 
             # conditionally run unit tests
             if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
                 make test
             fi
 
-            # clean the build artifacts
+            # clean the debug build artifacts
+            make distclean
+
+            # release configure and build
+            export PKG_CONFIG_PATH="$stage/packages/lib/release/pkgconfig:${OLD_PKG_CONFIG_PATH}"
+
+            # build the release version and link against the release zlib
+            CFLAGS="$RELEASE_CFLAGS" \
+                CXXFLAGS="$RELEASE_CXXFLAGS" \
+                CPPFLAGS="${CPPFLAGS:-} ${RELEASE_CPPFLAGS} -I$stage/packages/include/zlib" \
+                LDFLAGS="-L$stage/packages/lib/release" \
+                ./configure --enable-shared=no --with-pic \
+                    --prefix="\${AUTOBUILD_PACKAGES_DIR}" --libdir="\${prefix}/lib/release"
+            make
+            make install DESTDIR="$stage"
+
+            # conditionally run unit tests
+            if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                make test
+            fi
+
+            # clean the release build artifacts
             make distclean
         ;;
     esac
