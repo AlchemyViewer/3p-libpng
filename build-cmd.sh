@@ -72,20 +72,63 @@ pushd "$PNG_SOURCE_DIR"
 
         windows*)
             load_vsvars
-            
-            build_sln "projects/vstudio/vstudio.sln" "Release Library|$AUTOBUILD_WIN_VSPLATFORM" "pnglibconf"
-            build_sln "projects/vstudio/vstudio.sln" "Release Library|$AUTOBUILD_WIN_VSPLATFORM" "libpng"
-            mkdir -p "$stage/lib/release"
-            
+
             if [ "$AUTOBUILD_ADDRSIZE" = 32 ]
-            then bitdir=projects/vstudio/Release\ Library
-            else bitdir=projects/vstudio/x64/Release\ Library
+            then
+                archflags="/arch:SSE2"
+            else
+                archflags=""
             fi
 
-            cp -a "$bitdir/libpng16.lib" "$stage/lib/release/libpng16.lib"
-            cp -a "$bitdir/libpng16.pdb" "$stage/lib/release/"
             mkdir -p "$stage/include/libpng16"
-            cp -a {png.h,pngconf.h,pnglibconf.h} "$stage/include/libpng16"
+            mkdir -p "$stage/lib/debug"
+            mkdir -p "$stage/lib/release"
+
+            mkdir -p "build_debug"
+            pushd "build_debug"
+                cmake -E env CFLAGS="$archflags /DZLIB_DLL" CXXFLAGS="$archflags /DZLIB_DLL" LDFLAGS="/DEBUG:FULL" \
+                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
+                    -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
+            
+                cmake --build . --config Debug --clean-first
+
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    cp -a $stage/packages/lib/debug/zlibd1.dll Debug/
+                    ctest -C Debug
+                fi
+
+                cp "Debug/libpng16d.dll" "$stage/lib/debug/"
+                cp "Debug/libpng16d.lib" "$stage/lib/debug/"
+                cp "Debug/libpng16d.exp" "$stage/lib/debug/"
+                cp "Debug/libpng16d.pdb" "$stage/lib/debug/"
+            popd
+
+            mkdir -p "build_release"
+            pushd "build_release"
+                cmake -E env CFLAGS="$archflags /Ob3 /GL /Gy /Zi /DZLIB_DLL" CXXFLAGS="$archflags /Ob3 /GL /Gy /Zi /DZLIB_DLL" LDFLAGS="/LTCG /OPT:REF /OPT:ICF /DEBUG:FULL" \
+                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
+                    -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
+            
+                cmake --build . --config Release --clean-first
+
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    cp -a $stage/packages/lib/release/zlib1.dll Release/
+                    ctest -C Release
+                fi
+
+                cp "Release/libpng16.dll" "$stage/lib/release/"
+                cp "Release/libpng16.lib" "$stage/lib/release/"
+                cp "Release/libpng16.exp" "$stage/lib/release/"
+                cp "Release/libpng16.pdb" "$stage/lib/release/"
+
+                cp -a pnglibconf.h "$stage/include/libpng16"
+            popd
+
+            cp -a {png.h,pngconf.h} "$stage/include/libpng16"
         ;;
 
         darwin*)
