@@ -122,7 +122,8 @@ endif()
 
 # set definitions and sources for intel
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^i?86" OR
-   CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*")
+   CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*" OR
+   CMAKE_SYSTEM_PROCESSOR MATCHES "^AMD64*")
   set(PNG_INTEL_SSE_POSSIBLE_VALUES on off)
   set(PNG_INTEL_SSE "on" CACHE STRING "Enable INTEL_SSE optimizations:
      off: disable the optimizations")
