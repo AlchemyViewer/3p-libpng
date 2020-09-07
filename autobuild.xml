@@ -62,11 +62,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>3c7a04bd8c7ce2944673601435adda54</string>
+              <string>23ba44e15affc13b15717f02d98ed61e</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>https://pkg.alchemyviewer.org/repository/autobuild-external/zlib/windows/zlib-1.2.11.305-windows-305.tar.bz2</string>
+              <string>https://pkg.alchemyviewer.org/repository/autobuild-external/zlib/windows/zlib-1.2.11.308-windows-308.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -76,18 +76,18 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>3c4c5414206ba450dccb21fb9e763fbe</string>
+              <string>b231c0fd98a151a66c890a4bb29cfea3</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>https://pkg.alchemyviewer.org/repository/autobuild-external/zlib/windows64/zlib-1.2.11.305-windows64-305.tar.bz2</string>
+              <string>https://pkg.alchemyviewer.org/repository/autobuild-external/zlib/windows64/zlib-1.2.11.308-windows64-308.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
         <key>version</key>
-        <string>1.2.11.305</string>
+        <string>1.2.11.308</string>
       </map>
     </map>
     <key>package_description</key>
