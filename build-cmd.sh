@@ -86,7 +86,7 @@ pushd "$PNG_SOURCE_DIR"
 
             mkdir -p "build_debug"
             pushd "build_debug"
-                cmake -E env CFLAGS="$archflags /DZLIB_DLL" CXXFLAGS="$archflags /DZLIB_DLL" LDFLAGS="/DEBUG:FULL" \
+                cmake -E env CFLAGS="$archflags /DZLIB_DLL" CXXFLAGS="$archflags /std:c++17 /permissive- /DZLIB_DLL" LDFLAGS="/DEBUG:FULL" \
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
@@ -107,7 +107,7 @@ pushd "$PNG_SOURCE_DIR"
 
             mkdir -p "build_release"
             pushd "build_release"
-                cmake -E env CFLAGS="$archflags /Ob3 /GL /Gy /Zi /DZLIB_DLL" CXXFLAGS="$archflags /Ob3 /GL /Gy /Zi /DZLIB_DLL" LDFLAGS="/LTCG /OPT:REF /OPT:ICF /DEBUG:FULL" \
+                cmake -E env CFLAGS="$archflags /Ob3 /GL /Gy /Zi /DZLIB_DLL" CXXFLAGS="$archflags /Ob3 /GL /Gy /Zi /std:c++17 /permissive- /DZLIB_DLL" LDFLAGS="/LTCG /OPT:REF /OPT:ICF /DEBUG:FULL" \
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
