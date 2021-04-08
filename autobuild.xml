@@ -120,7 +120,6 @@
             <string>include/libpng16/png.h</string>
             <string>include/libpng16/pngconf.h</string>
             <string>include/libpng16/pnglibconf.h</string>
-            <string>docs/libpng/README.Linden</string>
           </array>
           <key>name</key>
           <string>common</string>

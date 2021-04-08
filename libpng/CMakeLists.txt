@@ -573,6 +573,12 @@ if(PNG_STATIC)
     set_target_properties(png_static PROPERTIES PREFIX "lib")
   endif()
   target_link_libraries(png_static ${ZLIB_LIBRARY} ${M_LIBRARY})
+# <ALCHEMY>
+  if("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+    target_compile_options(png_static PRIVATE /std:c++17 /permissive- /Z7 $<$<CONFIG:Release>:/Ob3> $<$<CONFIG:Release>:/Gy> $<$<EQUAL:${CMAKE_SIZEOF_VOID_P},4>:/arch:SSE2>)
+    target_link_options(png_static PRIVATE /DEBUG:FULL $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
+  endif()
+# </ALCHEMY>
 endif()
 
 if(PNG_FRAMEWORK)
