@@ -79,7 +79,7 @@ pushd "$PNG_SOURCE_DIR"
             mkdir -p "build_debug"
             pushd "build_debug"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
-                    -DPNG_SHARED=OFF -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
+                    -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
             
                 cmake --build . --config Debug --clean-first
@@ -95,7 +95,7 @@ pushd "$PNG_SOURCE_DIR"
             mkdir -p "build_release"
             pushd "build_release"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
-                    -DPNG_SHARED=OFF -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
+                    -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
             
                 cmake --build . --config Release --clean-first
