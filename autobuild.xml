@@ -143,8 +143,8 @@
           </map>
           <key>manifest</key>
           <array>
+            <string>lib/debug/libpng16d.a</string>
             <string>lib/release/libpng16.a</string>
-            <string>lib/release/libpng.a</string>
           </array>
           <key>name</key>
           <string>darwin</string>
