@@ -417,16 +417,10 @@ else()
                DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/scripts/checksym.awk"
                        "${CMAKE_CURRENT_SOURCE_DIR}/scripts/symbols.def")
 
-  add_custom_target(symbol-check DEPENDS
-                    "${CMAKE_CURRENT_BINARY_DIR}/scripts/symbols.chk")
-
   generate_copy("${CMAKE_CURRENT_BINARY_DIR}/scripts/sym.out"
                 "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")
   generate_copy("${CMAKE_CURRENT_BINARY_DIR}/scripts/vers.out"
                 "${CMAKE_CURRENT_BINARY_DIR}/libpng.vers")
-
-  add_custom_target(genvers DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.vers")
-  add_custom_target(gensym DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libpng.sym")
 
   add_custom_target("genprebuilt"
                     COMMAND "${CMAKE_COMMAND}"
@@ -573,6 +567,12 @@ if(PNG_STATIC)
     set_target_properties(png_static PROPERTIES PREFIX "lib")
   endif()
   target_link_libraries(png_static ${ZLIB_LIBRARY} ${M_LIBRARY})
+# <ALCHEMY>
+  if("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+    target_compile_options(png_static PRIVATE /std:c++17 /permissive- /Z7 $<$<CONFIG:Release>:/Ob3> $<$<CONFIG:Release>:/Gy> $<$<EQUAL:${CMAKE_SIZEOF_VOID_P},4>:/arch:SSE2>)
+    target_link_options(png_static PRIVATE /DEBUG:FULL $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
+  endif()
+# </ALCHEMY>
 endif()
 
 if(PNG_FRAMEWORK)

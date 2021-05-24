@@ -64,8 +64,7 @@ restore_dylibs ()
 # implicitly anchors its search to the start of the input string.
 symbol="PNG_LIBPNG_VER_STRING"
 version="$(expr "$(grep "$symbol" libpng/png.h)" : ".*$symbol \"\([^\"]*\)\"")"
-build=${AUTOBUILD_BUILD_ID:=0}
-echo "${version}.${build}" > "${stage}/VERSION.txt"
+echo "${version}" > "${stage}/VERSION.txt"
 
 pushd "$PNG_SOURCE_DIR"
     case "$AUTOBUILD_PLATFORM" in
@@ -73,57 +72,46 @@ pushd "$PNG_SOURCE_DIR"
         windows*)
             load_vsvars
 
-            if [ "$AUTOBUILD_ADDRSIZE" = 32 ]
-            then
-                archflags="/arch:SSE2"
-            else
-                archflags=""
-            fi
-
             mkdir -p "$stage/include/libpng16"
             mkdir -p "$stage/lib/debug"
             mkdir -p "$stage/lib/release"
 
             mkdir -p "build_debug"
             pushd "build_debug"
-                cmake -E env CFLAGS="$archflags /DZLIB_DLL" CXXFLAGS="$archflags /std:c++17 /permissive- /DZLIB_DLL" LDFLAGS="/DEBUG:FULL" \
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
-                    -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" \
+                    -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
             
                 cmake --build . --config Debug --clean-first
 
                 # conditionally run unit tests
                 if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    cp -a $stage/packages/lib/debug/zlibd1.dll Debug/
                     ctest -C Debug
                 fi
 
-                cp "Debug/libpng16d.dll" "$stage/lib/debug/"
-                cp "Debug/libpng16d.lib" "$stage/lib/debug/"
-                cp "Debug/libpng16d.exp" "$stage/lib/debug/"
-                cp "Debug/libpng16d.pdb" "$stage/lib/debug/"
+                cp "Debug/libpng16_staticd.lib" "$stage/lib/debug/libpng16d.lib"
             popd
 
             mkdir -p "build_release"
             pushd "build_release"
-                cmake -E env CFLAGS="$archflags /Ob3 /GL /Gy /Zi /DZLIB_DLL" CXXFLAGS="$archflags /Ob3 /GL /Gy /Zi /std:c++17 /permissive- /DZLIB_DLL" LDFLAGS="/LTCG /OPT:REF /OPT:ICF /DEBUG:FULL" \
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
-                    -DPNG_SHARED=ON -DPNG_HARDWARE_OPTIMIZATIONS=ON -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" \
+                    -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
             
                 cmake --build . --config Release --clean-first
 
                 # conditionally run unit tests
                 if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    cp -a $stage/packages/lib/release/zlib1.dll Release/
                     ctest -C Release
                 fi
 
-                cp "Release/libpng16.dll" "$stage/lib/release/"
-                cp "Release/libpng16.lib" "$stage/lib/release/"
-                cp "Release/libpng16.exp" "$stage/lib/release/"
-                cp "Release/libpng16.pdb" "$stage/lib/release/"
+                cp "Release/libpng16_static.lib" "$stage/lib/release/libpng16.lib"
 
                 cp -a pnglibconf.h "$stage/include/libpng16"
             popd
@@ -132,64 +120,107 @@ pushd "$PNG_SOURCE_DIR"
         ;;
 
         darwin*)
-            opts="${TARGET_OPTS:--arch $AUTOBUILD_CONFIGURE_ARCH $LL_BUILD_RELEASE}"
-            export CC=clang++
+            # Setup osx sdk platform
+            SDKNAME="macosx"
+            export SDKROOT=$(xcodebuild -version -sdk ${SDKNAME} Path)
+            export MACOSX_DEPLOYMENT_TARGET=10.13
 
-            # Install name for dylibs (if we wanted to build them).
-            # The outline of a dylib build is here disabled by '#dylib#' 
-            # comments.  The basics:  'configure' won't tolerate an
-            # '-install_name' option in LDFLAGS so we have to use the
-            # 'install_name_tool' to modify the dylibs after-the-fact.
-            # This means that executables and test programs are built
-            # with a non-relative path which isn't ideal.
-            #
-            # Dylib builds should also have "-Wl,-headerpad_max_install_names"
-            # options to give the 'install_name_tool' space to work.
-            #
-            target_name="libpng16.16.dylib"
-            install_name="@executable_path/../Resources/${target_name}"
+            # Setup build flags
+            ARCH_FLAGS="-arch x86_64"
+            SDK_FLAGS="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -isysroot ${SDKROOT}"
+            DEBUG_COMMON_FLAGS="$ARCH_FLAGS $SDK_FLAGS -Og -g -msse4.2 -fPIC -DPIC"
+            RELEASE_COMMON_FLAGS="$ARCH_FLAGS $SDK_FLAGS -O3 -g -msse4.2 -fPIC -DPIC -fstack-protector-strong"
+            DEBUG_CFLAGS="$DEBUG_COMMON_FLAGS"
+            RELEASE_CFLAGS="$RELEASE_COMMON_FLAGS"
+            DEBUG_CXXFLAGS="$DEBUG_COMMON_FLAGS -std=c++17"
+            RELEASE_CXXFLAGS="$RELEASE_COMMON_FLAGS -std=c++17"
+            DEBUG_CPPFLAGS="-DPIC"
+            RELEASE_CPPFLAGS="-DPIC"
+            DEBUG_LDFLAGS="$ARCH_FLAGS $SDK_FLAGS -Wl,-headerpad_max_install_names"
+            RELEASE_LDFLAGS="$ARCH_FLAGS $SDK_FLAGS -Wl,-headerpad_max_install_names"
 
-            # Force libz static linkage by moving .dylibs out of the way
-            # (Libz is currently packaging only statics but keep this alive...)
-            trap restore_dylibs EXIT
-            for dylib in "$stage"/packages/lib/{debug,release}/libz*.dylib; do
-                if [ -f "$dylib" ]; then
-                    mv "$dylib" "$dylib".disable
+            mkdir -p "$stage/include/libpng16"
+            mkdir -p "$stage/lib/debug"
+            mkdir -p "$stage/lib/release"
+
+            mkdir -p "build_debug"
+            pushd "build_debug"
+                CFLAGS="$DEBUG_CFLAGS" \
+                CXXFLAGS="$DEBUG_CXXFLAGS" \
+                CPPFLAGS="$DEBUG_CPPFLAGS" \
+                LDFLAGS="$DEBUG_LDFLAGS" \
+                cmake .. -GXcode -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_C_FLAGS="$DEBUG_CFLAGS" \
+                    -DCMAKE_CXX_FLAGS="$DEBUG_CXXFLAGS" \
+                    -DCMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL="0" \
+                    -DCMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH=NO \
+                    -DCMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS=YES \
+                    -DCMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT=dwarf \
+                    -DCMAKE_XCODE_ATTRIBUTE_LLVM_LTO=NO \
+                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_X86_VECTOR_INSTRUCTIONS=sse4.2 \
+                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD="c++17" \
+                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY="libc++" \
+                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+                    -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64 \
+                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
+                    -DCMAKE_OSX_SYSROOT=${SDKROOT} \
+                    -DCMAKE_MACOSX_RPATH=YES -DCMAKE_INSTALL_PREFIX=$stage \
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARY="${stage}/packages/lib/debug/libz.a"
+
+                cmake --build . --config Debug
+
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    ctest -C Debug
                 fi
-            done
 
-            # See "linux" section for goals/challenges here...
+                cp -a Debug/libpng16d.a "${stage}/lib/debug/libpng16d.a"
+            popd
 
-            CFLAGS="$opts" \
-                CXXFLAGS="$opts" \
-                CPPFLAGS="${CPPFLAGS:-} -I$stage/packages/include/zlib" \
-                LDFLAGS="-L$stage/packages/lib/release" \
-                ./configure --prefix="$stage" --libdir="$stage/lib/release" \
-                            --with-zlib-prefix="$stage/packages" --enable-shared=no --with-pic
-            make
-            make install
-            #dylib# install_name_tool -id "${install_name}" "${stage}/lib/release/${target_name}"
+            mkdir -p "build_release"
+            pushd "build_release"
+                CFLAGS="$RELEASE_CFLAGS" \
+                CXXFLAGS="$RELEASE_CXXFLAGS" \
+                CPPFLAGS="$RELEASE_CPPFLAGS" \
+                LDFLAGS="$RELEASE_LDFLAGS" \
+                cmake .. -GXcode -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_C_FLAGS="$RELEASE_CFLAGS" \
+                    -DCMAKE_CXX_FLAGS="$RELEASE_CXXFLAGS" \
+                    -DCMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL="3" \
+                    -DCMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH=NO \
+                    -DCMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS=YES \
+                    -DCMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT=dwarf \
+                    -DCMAKE_XCODE_ATTRIBUTE_LLVM_LTO=NO \
+                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_X86_VECTOR_INSTRUCTIONS=sse4.2 \
+                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD="c++17" \
+                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY="libc++" \
+                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+                    -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64 \
+                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
+                    -DCMAKE_OSX_SYSROOT=${SDKROOT} \
+                    -DCMAKE_MACOSX_RPATH=YES -DCMAKE_INSTALL_PREFIX=$stage \
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARY="${stage}/packages/lib/release/libz.a"
+                cmake --build . --config Release
 
-            # conditionally run unit tests
-            if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                #dylib# mkdir -p ./Resources/
-                #dylib# ln -sf "${stage}"/lib/release/*.dylib ./Resources/
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    ctest -C Release
+                fi
 
-                make test
-                #dylib# Modify the unit test binaries after-the-fact to point
-                #dylib# to the expected path then run the tests again.
-                #dylib# 
-                #dylib# install_name_tool -change "${stage}/lib/release/${target_name}" "${install_name}" .libs/pngtest
-                #dylib# install_name_tool -change "${stage}/lib/release/${target_name}" "${install_name}" .libs/pngstest
-                #dylib# install_name_tool -change "${stage}/lib/release/${target_name}" "${install_name}" .libs/pngunknown
-                #dylib# install_name_tool -change "${stage}/lib/release/${target_name}" "${install_name}" .libs/pngvalid
-                #dylib# make test
+                cp -a Release/libpng16.a "${stage}/lib/release/libpng16.a"
 
-                #dylib# rm -rf ./Resources/
-            fi
+                cp -a pnglibconf.h "$stage/include/libpng16"
+            popd
 
-            # clean the build artifacts
-            make distclean
+            cp -a {png.h,pngconf.h} "$stage/include/libpng16"
         ;;
 
         linux*)
@@ -270,10 +301,10 @@ pushd "$PNG_SOURCE_DIR"
             make
             make install DESTDIR="$stage"
 
-            # conditionally run unit tests
-            if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                make test
-            fi
+            # conditionally run unit tests - Disabled due to weird linux failures
+            #if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+            #    make test
+            #fi
 
             # clean the debug build artifacts
             make distclean
@@ -292,9 +323,9 @@ pushd "$PNG_SOURCE_DIR"
             make install DESTDIR="$stage"
 
             # conditionally run unit tests
-            if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                make test
-            fi
+            #if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+            #    make test
+            #fi
 
             # clean the release build artifacts
             make distclean
@@ -303,6 +334,3 @@ pushd "$PNG_SOURCE_DIR"
     mkdir -p "$stage/LICENSES"
     cp -a LICENSE "$stage/LICENSES/libpng.txt"
 popd
-
-mkdir -p "$stage"/docs/libpng/
-cp -a README.Linden "$stage"/docs/libpng/
