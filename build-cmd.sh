@@ -81,6 +81,7 @@ pushd "$PNG_SOURCE_DIR"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" \
                     -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
@@ -100,6 +101,7 @@ pushd "$PNG_SOURCE_DIR"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" \
                     -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
@@ -169,6 +171,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/debug_x86" \
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
                     -DZLIB_LIBRARY="${stage}/packages/lib/debug/libz.a"
@@ -207,6 +210,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/release_x86" \
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
                     -DZLIB_LIBRARY="${stage}/packages/lib/release/libz.a"
@@ -247,6 +251,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/debug_arm64" \
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_HARDWARE_ARM=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
                     -DZLIB_LIBRARY="${stage}/packages/lib/debug/libz.a"
@@ -284,6 +289,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/release_arm64" \
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_HARDWARE_ARM=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
                     -DZLIB_LIBRARY="${stage}/packages/lib/release/libz.a"
