@@ -64,10 +64,13 @@ set(PNG_PREFIX "" CACHE STRING "Prefix to add to the API function names")
 set(DFA_XTRA "" CACHE FILEPATH "File containing extra configuration settings")
 
 if(PNG_HARDWARE_OPTIMIZATIONS)
+option(PNG_HARDWARE_ARM "Enable hardware optimizations" OFF)
+option(PNG_HARDWARE_PPC "Enable hardware optimizations" OFF)
+option(PNG_HARDWARE_MIPS "Enable hardware optimizations" OFF)
+option(PNG_HARDWARE_X86 "Enable hardware optimizations" OFF)
 
 # set definitions and sources for arm
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm" OR
-  CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64")
+if(PNG_HARDWARE_ARM)
   set(PNG_ARM_NEON_POSSIBLE_VALUES check on off)
   set(PNG_ARM_NEON "check" CACHE STRING "Enable ARM NEON optimizations:
      check: (default) use internal checking code;
@@ -97,8 +100,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm" OR
 endif()
 
 # set definitions and sources for powerpc
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^powerpc*" OR
-   CMAKE_SYSTEM_PROCESSOR MATCHES "^ppc64*")
+if(PNG_HARDWARE_PPC)
   set(PNG_POWERPC_VSX_POSSIBLE_VALUES on off)
   set(PNG_POWERPC_VSX "on" CACHE STRING "Enable POWERPC VSX optimizations:
      off: disable the optimizations.")
@@ -121,9 +123,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^powerpc*" OR
 endif()
 
 # set definitions and sources for intel
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^i?86" OR
-   CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*" OR
-   CMAKE_SYSTEM_PROCESSOR MATCHES "^AMD64*")
+if(PNG_HARDWARE_X86)
   set(PNG_INTEL_SSE_POSSIBLE_VALUES on off)
   set(PNG_INTEL_SSE "on" CACHE STRING "Enable INTEL_SSE optimizations:
      off: disable the optimizations")
@@ -146,8 +146,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^i?86" OR
 endif()
 
 # set definitions and sources for MIPS
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "mipsel*" OR
-   CMAKE_SYSTEM_PROCESSOR MATCHES "mips64el*")
+if(PNG_HARDWARE_MIPS)
   set(PNG_MIPS_MSA_POSSIBLE_VALUES on off)
   set(PNG_MIPS_MSA "on" CACHE STRING "Enable MIPS_MSA optimizations:
      off: disable the optimizations")
