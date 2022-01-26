@@ -169,7 +169,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_OSX_SYSROOT=${SDKROOT} \
                     -DCMAKE_MACOSX_RPATH=YES \
                     -DCMAKE_INSTALL_PREFIX="$stage/debug_x86" \
-                    -DPNG_SHARED=OFF \
+                    -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
@@ -208,7 +208,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_OSX_SYSROOT=${SDKROOT} \
                     -DCMAKE_MACOSX_RPATH=YES \
                     -DCMAKE_INSTALL_PREFIX="$stage/release_x86" \
-                    -DPNG_SHARED=OFF \
+                    -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
@@ -249,7 +249,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_OSX_SYSROOT=${SDKROOT} \
                     -DCMAKE_MACOSX_RPATH=YES \
                     -DCMAKE_INSTALL_PREFIX="$stage/debug_arm64" \
-                    -DPNG_SHARED=OFF \
+                    -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_HARDWARE_ARM=ON \
                     -DPNG_ARM_NEON=on \
@@ -288,7 +288,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_OSX_SYSROOT=${SDKROOT} \
                     -DCMAKE_MACOSX_RPATH=YES \
                     -DCMAKE_INSTALL_PREFIX="$stage/release_arm64" \
-                    -DPNG_SHARED=OFF \
+                    -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_HARDWARE_ARM=ON \
                     -DPNG_ARM_NEON=on \
