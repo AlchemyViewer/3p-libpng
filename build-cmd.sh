@@ -252,6 +252,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_HARDWARE_ARM=ON \
+                    -DPNG_ARM_NEON=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
                     -DZLIB_LIBRARY="${stage}/packages/lib/debug/libz.a"
@@ -290,6 +291,7 @@ pushd "$PNG_SOURCE_DIR"
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_HARDWARE_ARM=ON \
+                    -DPNG_ARM_NEON=on \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
                     -DZLIB_LIBRARY="${stage}/packages/lib/release/libz.a"
