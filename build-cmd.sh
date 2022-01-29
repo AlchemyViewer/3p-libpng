@@ -140,10 +140,7 @@ pushd "$PNG_SOURCE_DIR"
             DEBUG_LDFLAGS="-Wl,-headerpad_max_install_names"
             RELEASE_LDFLAGS="-Wl,-headerpad_max_install_names"
 
-            mkdir -p "$stage/include/libpng16"
-            mkdir -p "$stage/lib/debug"
-            mkdir -p "$stage/lib/release"
-
+            # x86 Deploy Target
             export MACOSX_DEPLOYMENT_TARGET=10.15
 
             mkdir -p "build_debug_x86"
@@ -224,8 +221,8 @@ pushd "$PNG_SOURCE_DIR"
                 fi
             popd
 
-            # ARM64 libs
-            export MACOSX_DEPLOYMENT_TARGET=12.0
+            # ARM64 Deploy Target
+            export MACOSX_DEPLOYMENT_TARGET=11.0
 
             mkdir -p "build_debug_arm64"
             pushd "build_debug_arm64"
@@ -304,6 +301,11 @@ pushd "$PNG_SOURCE_DIR"
                     ctest -C Release
                 fi
             popd
+
+            # create staging dir structure
+            mkdir -p "$stage/include/libpng16"
+            mkdir -p "$stage/lib/debug"
+            mkdir -p "$stage/lib/release"
 
             # create fat libraries
             lipo -create ${stage}/debug_x86/lib/libpng16d.a ${stage}/debug_arm64/lib/libpng16d.a -output ${stage}/lib/debug/libpng16d.a
