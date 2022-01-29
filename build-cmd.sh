@@ -126,9 +126,13 @@ pushd "$PNG_SOURCE_DIR"
             SDKNAME="macosx"
             export SDKROOT=$(xcodebuild -version -sdk ${SDKNAME} Path)
 
+            # Deploy Targets
+            X86_DEPLOY=10.15
+            ARM64_DEPLOY=11.0
+
             # Setup build flags
-            ARCH_FLAGS_X86="-arch x86_64 -mmacosx-version-min=10.15 -isysroot ${SDKROOT} -msse4.2"
-            ARCH_FLAGS_ARM64="-arch arm64 -mmacosx-version-min=12.0 -isysroot ${SDKROOT}"
+            ARCH_FLAGS_X86="-arch x86_64 -mmacosx-version-min=${X86_DEPLOY} -isysroot ${SDKROOT} -msse4.2"
+            ARCH_FLAGS_ARM64="-arch arm64 -mmacosx-version-min=${ARM64_DEPLOY} -isysroot ${SDKROOT}"
             DEBUG_COMMON_FLAGS="-O0 -g -fPIC -DPIC"
             RELEASE_COMMON_FLAGS="-O3 -g -fPIC -DPIC -fstack-protector-strong"
             DEBUG_CFLAGS="$DEBUG_COMMON_FLAGS"
@@ -141,7 +145,7 @@ pushd "$PNG_SOURCE_DIR"
             RELEASE_LDFLAGS="-Wl,-headerpad_max_install_names"
 
             # x86 Deploy Target
-            export MACOSX_DEPLOYMENT_TARGET=10.15
+            export MACOSX_DEPLOYMENT_TARGET=${X86_DEPLOY}
 
             mkdir -p "build_debug_x86"
             pushd "build_debug_x86"
@@ -222,7 +226,7 @@ pushd "$PNG_SOURCE_DIR"
             popd
 
             # ARM64 Deploy Target
-            export MACOSX_DEPLOYMENT_TARGET=11.0
+            export MACOSX_DEPLOYMENT_TARGET=${ARM64_DEPLOY}
 
             mkdir -p "build_debug_arm64"
             pushd "build_debug_arm64"
