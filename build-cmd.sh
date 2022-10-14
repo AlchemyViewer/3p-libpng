@@ -359,10 +359,10 @@ pushd "$PNG_SOURCE_DIR"
                 CXXFLAGS="$DEBUG_CXXFLAGS" \
                 CPPFLAGS="$DEBUG_CPPFLAGS" \
                 cmake .. -GNinja -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_BUILD_TYPE="Debug" \
                     -DCMAKE_C_FLAGS="$DEBUG_CFLAGS" \
-                    -DCMAKE_CXX_FLAGS="$DEBUG_CXXFLAGS" \
                     -DCMAKE_INSTALL_PREFIX="$stage/debug" \
-                    -DPNG_SHARED=ON \
+                    -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
@@ -383,10 +383,10 @@ pushd "$PNG_SOURCE_DIR"
                 CXXFLAGS="$RELEASE_CXXFLAGS" \
                 CPPFLAGS="$RELEASE_CPPFLAGS" \
                 cmake .. -GNinja -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_BUILD_TYPE="Release" \
                     -DCMAKE_C_FLAGS="$RELEASE_CFLAGS" \
-                    -DCMAKE_CXX_FLAGS="$RELEASE_CXXFLAGS" \
                     -DCMAKE_INSTALL_PREFIX="$stage/release" \
-                    -DPNG_SHARED=ON \
+                    -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_BUILD_ZLIB=ON \
                     -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
