@@ -66,16 +66,16 @@ symbol="PNG_LIBPNG_VER_STRING"
 version="$(expr "$(grep "$symbol" libpng/png.h)" : ".*$symbol \"\([^\"]*\)\"")"
 echo "${version}" > "${stage}/VERSION.txt"
 
+# Setup staging dirs
+mkdir -p "$stage/include/libpng16"
+mkdir -p "$stage/lib/debug"
+mkdir -p "$stage/lib/release"
+
 pushd "$PNG_SOURCE_DIR"
     case "$AUTOBUILD_PLATFORM" in
 
         windows*)
             load_vsvars
-
-            mkdir -p "$stage/include/libpng16"
-            mkdir -p "$stage/lib/debug"
-            mkdir -p "$stage/lib/release"
-
             mkdir -p "build_debug"
             pushd "build_debug"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
@@ -300,11 +300,6 @@ pushd "$PNG_SOURCE_DIR"
                 fi
             popd
 
-            # create staging dir structure
-            mkdir -p "$stage/include/libpng16"
-            mkdir -p "$stage/lib/debug"
-            mkdir -p "$stage/lib/release"
-
             # create fat libraries
             lipo -create ${stage}/debug_x86/lib/libpng16d.a ${stage}/debug_arm64/lib/libpng16d.a -output ${stage}/lib/debug/libpng16d.a
             lipo -create ${stage}/release_x86/lib/libpng16.a ${stage}/release_arm64/lib/libpng16.a -output ${stage}/lib/release/libpng16.a
@@ -358,67 +353,60 @@ pushd "$PNG_SOURCE_DIR"
                 fi
             done
 
-            # 1.16 INSTALL claims ZLIBINC and ZLIBLIB env vars are active but this is not so.
-            # If you fail to pick up the correct version of zlib (from packages), the build
-            # will find the system's version and generate the wrong PNG_ZLIB_VERNUM definition
-            # in the build.  Mostly you won't notice until certain things try to run.  So
-            # check the generated pnglibconf.h when doing development and confirm it's correct.
-            #
-            # The sequence below has the effect of:
-            # * Producing only static libraries.
-            # * Builds all bin/* targets with static libraries.
-
-            # Fix up path for pkgconfig
-            if [ -d "$stage/packages/lib/release/pkgconfig" ]; then
-                fix_pkgconfig_prefix "$stage/packages"
-            fi
-
-            OLD_PKG_CONFIG_PATH="${PKG_CONFIG_PATH:-}"
-
-            # force regenerate autoconf
-            autoreconf -fvi
-
-            # debug configure and build
-            export PKG_CONFIG_PATH="$stage/packages/lib/debug/pkgconfig:${OLD_PKG_CONFIG_PATH}"
-
-            # build the debug version and link against the debug zlib
-            CFLAGS="$DEBUG_CFLAGS" \
+            mkdir -p "build_debug"
+            pushd "build_debug"
+                CFLAGS="$DEBUG_CFLAGS" \
                 CXXFLAGS="$DEBUG_CXXFLAGS" \
-                CPPFLAGS="${CPPFLAGS:-} ${DEBUG_CPPFLAGS} -I$stage/packages/include/zlib" \
-                LDFLAGS="-L$stage/packages/lib/debug" \
-                ./configure --enable-shared=no --with-pic --enable-hardware-optimizations=yes --enable-intel-sse=yes \
-                    --prefix="\${AUTOBUILD_PACKAGES_DIR}" --libdir="\${prefix}/lib/debug"
-            make
-            make install DESTDIR="$stage"
+                CPPFLAGS="$DEBUG_CPPFLAGS" \
+                cmake .. -GNinja -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_C_FLAGS="$DEBUG_CFLAGS" \
+                    -DCMAKE_CXX_FLAGS="$DEBUG_CXXFLAGS" \
+                    -DCMAKE_INSTALL_PREFIX="$stage/debug" \
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/debug/libz.a"
 
-            # conditionally run unit tests - Disabled due to weird linux failures
-            #if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-            #    make test
-            #fi
+                cmake --build . --config Debug
+                cmake --install . --config Debug
 
-            # clean the debug build artifacts
-            make distclean
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    ctest -C Debug
+                fi
+            popd
 
-            # release configure and build
-            export PKG_CONFIG_PATH="$stage/packages/lib/release/pkgconfig:${OLD_PKG_CONFIG_PATH}"
-
-            # build the release version and link against the release zlib
-            CFLAGS="$RELEASE_CFLAGS" \
+            mkdir -p "build_release"
+            pushd "build_release"
+                CFLAGS="$RELEASE_CFLAGS" \
                 CXXFLAGS="$RELEASE_CXXFLAGS" \
-                CPPFLAGS="${CPPFLAGS:-} ${RELEASE_CPPFLAGS} -I$stage/packages/include/zlib" \
-                LDFLAGS="-L$stage/packages/lib/release" \
-                ./configure --enable-shared=no --with-pic --enable-hardware-optimizations=yes --enable-intel-sse=yes \
-                    --prefix="\${AUTOBUILD_PACKAGES_DIR}" --libdir="\${prefix}/lib/release"
-            make
-            make install DESTDIR="$stage"
+                CPPFLAGS="$RELEASE_CPPFLAGS" \
+                cmake .. -GNinja -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_C_FLAGS="$RELEASE_CFLAGS" \
+                    -DCMAKE_CXX_FLAGS="$RELEASE_CXXFLAGS" \
+                    -DCMAKE_INSTALL_PREFIX="$stage/release" \
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DPNG_BUILD_ZLIB=ON \
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/release/libz.a"
 
-            # conditionally run unit tests
-            #if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-            #    make test
-            #fi
+                cmake --build . --config Release
+                cmake --install . --config Release
 
-            # clean the release build artifacts
-            make distclean
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    ctest -C Release
+                fi
+            popd
+
+            # Copy libraries
+            cp -a ${stage}/debug/lib/*.a ${stage}/lib/debug/
+            cp -a ${stage}/release/lib/*.a ${stage}/lib/release/
+
+            # copy headers
+            mv $stage/release/include/libpng16/* $stage/include/libpng16
         ;;
     esac
     mkdir -p "$stage/LICENSES"
