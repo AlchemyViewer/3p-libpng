@@ -147,7 +147,8 @@ endif()
 
 # Set definitions and sources for Intel.
 if(TARGET_ARCH MATCHES "^i?86" OR
-   TARGET_ARCH MATCHES "^x86_64*")
+   TARGET_ARCH MATCHES "^x86_64*" OR
+   TARGET_ARCH MATCHES "^AMD64*")
   set(PNG_INTEL_SSE_POSSIBLE_VALUES on off)
   set(PNG_INTEL_SSE "on"
       CACHE STRING "Enable INTEL_SSE optimizations: on|off; on is default")

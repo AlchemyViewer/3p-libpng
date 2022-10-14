@@ -81,10 +81,9 @@ pushd "$PNG_SOURCE_DIR"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" \
-                    -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
+                    -DZLIB_INCLUDE_DIRS="$(cygpath -m $stage)/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="$(cygpath -m $stage)/packages/lib/debug/zlibd.lib"
             
                 cmake --build . --config Debug --clean-first
 
@@ -101,10 +100,9 @@ pushd "$PNG_SOURCE_DIR"
                 cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="$(cygpath -m $stage)/packages/include/zlib" \
-                    -DZLIB_LIBRARY="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
+                    -DZLIB_INCLUDE_DIRS="$(cygpath -m $stage)/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="$(cygpath -m $stage)/packages/lib/release/zlib.lib"
             
                 cmake --build . --config Release --clean-first
 
@@ -172,10 +170,9 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/debug_x86" \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARY="${stage}/packages/lib/debug/libz.a"
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/debug/libz.a"
 
                 cmake --build . --config Debug
                 cmake --install . --config Debug
@@ -211,10 +208,9 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/release_x86" \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_HARDWARE_X86=ON \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARY="${stage}/packages/lib/release/libz.a"
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/release/libz.a"
 
                 cmake --build . --config Release
                 cmake --install . --config Release
@@ -252,11 +248,10 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/debug_arm64" \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_HARDWARE_ARM=ON \
                     -DPNG_ARM_NEON=on \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARY="${stage}/packages/lib/debug/libz.a"
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/debug/libz.a"
 
                 cmake --build . --config Debug
                 cmake --install . --config Debug
@@ -291,11 +286,10 @@ pushd "$PNG_SOURCE_DIR"
                     -DCMAKE_INSTALL_PREFIX="$stage/release_arm64" \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_HARDWARE_ARM=ON \
                     -DPNG_ARM_NEON=on \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIR="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARY="${stage}/packages/lib/release/libz.a"
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/release/libz.a"
 
                 cmake --build . --config Release
                 cmake --install . --config Release
