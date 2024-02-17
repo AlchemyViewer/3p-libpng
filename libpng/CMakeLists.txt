@@ -88,16 +88,8 @@ option(PNG_HARDWARE_OPTIMIZATIONS "Enable hardware optimizations" ON)
 option(PNG_BUILD_ZLIB "Custom zlib location, else find_package is used" OFF)
 if(NOT PNG_BUILD_ZLIB)
   find_package(ZLIB REQUIRED)
-elseif(POLICY CMP0074)
-  # TODO: Remove the policy check if CMake version 3.12 or greater becomes the minimum required.
-  if("x${ZLIB_ROOT}" STREQUAL "x")
-    message(DEPRECATION
-            "The option PNG_BUILD_ZLIB has been deprecated; please use ZLIB_ROOT instead")
-  else()
-    message(SEND_ERROR
-            "The option PNG_BUILD_ZLIB=${PNG_BUILD_ZLIB} and "
-            "the variable ZLIB_ROOT=\"${ZLIB_ROOT}\" are mutually exclusive")
-  endif()
+else()
+  include_directories(${ZLIB_INCLUDE_DIRS})
 endif()
 
 if(UNIX AND NOT APPLE AND NOT BEOS AND NOT HAIKU AND NOT EMSCRIPTEN)
@@ -666,7 +658,7 @@ if(PNG_SHARED)
                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libpng${PNGLIB_ABI_VERSION}>
                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                              PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(png_shared PUBLIC ZLIB::ZLIB ${M_LIBRARY})
+  target_link_libraries(png_shared PUBLIC ${ZLIB_LIBRARIES} ${M_LIBRARY})
 endif()
 
 if(PNG_STATIC)
@@ -681,7 +673,7 @@ if(PNG_STATIC)
                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libpng${PNGLIB_ABI_VERSION}>
                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                              PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(png_static PUBLIC ZLIB::ZLIB ${M_LIBRARY})
+  target_link_libraries(png_static PUBLIC ${ZLIB_LIBRARIES} ${M_LIBRARY})
 
 # <ALCHEMY>
   if("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
@@ -712,7 +704,7 @@ if(PNG_FRAMEWORK AND APPLE)
                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libpng${PNGLIB_ABI_VERSION}>
                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                              PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(png_framework PUBLIC ZLIB::ZLIB ${M_LIBRARY})
+  target_link_libraries(png_framework PUBLIC ${ZLIB_LIBRARIES} ${M_LIBRARY})
 endif()
 
 if(NOT PNG_LIBRARY_TARGETS)
@@ -917,7 +909,7 @@ if(PNG_SHARED AND PNG_TOOLS)
   set(PNG_BIN_TARGETS pngfix)
 
   add_executable(png-fix-itxt ${png_fix_itxt_sources})
-  target_link_libraries(png-fix-itxt PRIVATE ZLIB::ZLIB ${M_LIBRARY})
+  target_link_libraries(png-fix-itxt PRIVATE ${ZLIB_LIBRARIES} ${M_LIBRARY})
   list(APPEND PNG_BIN_TARGETS png-fix-itxt)
 endif()
 
