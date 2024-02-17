@@ -62,9 +62,9 @@ restore_dylibs ()
 # right line, and expr to extract just the version number. Because of that, we
 # state the relevant symbol name twice. Preface it with ".*" because expr
 # implicitly anchors its search to the start of the input string.
-symbol="PNG_LIBPNG_VER_STRING"
-version="$(expr "$(grep "$symbol" libpng/png.h)" : ".*$symbol \"\([^\"]*\)\"")"
-echo "${version}" > "${stage}/VERSION.txt"
+# symbol="PNG_LIBPNG_VER_STRING"
+# version="$(expr "$(grep "$symbol" libpng/png.h)" : ".*$symbol \"\([^\"]*\)\"")"
+echo "1.6.42" > "${stage}/VERSION.txt"
 
 # Setup staging dirs
 mkdir -p "$stage/include/libpng16"
