@@ -69,12 +69,12 @@ pushd "$PNG_SOURCE_DIR"
                     ctest -C Debug
                 fi
 
-                cp "Debug/libpng16_staticd.lib" "$stage/lib/debug/libpng16d.lib"
+                cp "libpng16_staticd.lib" "$stage/lib/debug/libpng16d.lib"
             popd
 
             mkdir -p "build_release"
             pushd "build_release"
-                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
+                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_BUILD_ZLIB=ON \
@@ -88,7 +88,7 @@ pushd "$PNG_SOURCE_DIR"
                     ctest -C Release
                 fi
 
-                cp "Release/libpng16_static.lib" "$stage/lib/release/libpng16.lib"
+                cp "libpng16_static.lib" "$stage/lib/release/libpng16.lib"
 
                 cp -a pnglibconf.h "$stage/include/libpng16"
             popd
