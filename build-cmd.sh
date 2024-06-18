@@ -28,30 +28,6 @@ source_environment_tempfile="$stage/source_environment.sh"
 "$autobuild" source_environment > "$source_environment_tempfile"
 . "$source_environment_tempfile"
 
-[ -f "$stage"/packages/include/zlib/zlib.h ] || \
-{ echo "Run 'autobuild install' first." 1>&2 ; exit 1; }
-
-# Restore all .sos
-restore_sos ()
-{
-    for solib in "${stage}"/packages/lib/{debug,release}/lib*.so*.disable; do 
-        if [ -f "$solib" ]; then
-            mv -f "$solib" "${solib%.disable}"
-        fi
-    done
-}
-
-
-# Restore all .dylibs
-restore_dylibs ()
-{
-    for dylib in "$stage/packages/lib"/{debug,release}/*.dylib.disable; do
-        if [ -f "$dylib" ]; then
-            mv "$dylib" "${dylib%.disable}"
-        fi
-    done
-}
-
 # Unlike grep, expr matches the specified pattern against a string also
 # specified on its command line. So our first use of expr to obtain the
 # version number went like this:
@@ -228,15 +204,6 @@ pushd "$PNG_SOURCE_DIR"
                 # Incorporate special pre-processing flags
                 export CPPFLAGS="$TARGET_CPPFLAGS"
             fi
-
-            # Force static linkage to libz by moving .sos out of the way
-            # (Libz is only packaging statics right now but keep this working.)
-            trap restore_sos EXIT
-            for solib in "${stage}"/packages/lib/{debug,release}/libz.so*; do
-                if [ -f "$solib" ]; then
-                    mv -f "$solib" "$solib".disable
-                fi
-            done
 
             mkdir -p "build_release"
             pushd "build_release"
