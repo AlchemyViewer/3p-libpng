@@ -95,9 +95,7 @@
           </map>
           <key>manifest</key>
           <array>
-            <string>include/libpng16/png.h</string>
-            <string>include/libpng16/pngconf.h</string>
-            <string>include/libpng16/pnglibconf.h</string>
+            <string>include/*</string>
 </array>
           <key>name</key>
           <string>common</string>
@@ -119,7 +117,6 @@
           </map>
           <key>manifest</key>
           <array>
-            <string>lib/debug/libpng16d.a</string>
             <string>lib/release/libpng16.a</string>
 </array>
           <key>build_directory</key>
@@ -144,8 +141,7 @@
           </map>
           <key>manifest</key>
           <array>
-            <string>lib/debug/*.a</string>
-            <string>lib/release/*.a</string>
+            <string>lib/*.a</string>
 </array>
           <key>build_directory</key>
           <string>stage</string>
@@ -187,7 +183,7 @@
       <key>name</key>
       <string>libpng</string>
       <key>canonical_repo</key>
-      <string>https://git.alchemyviewer.org/alchemy/thirdparty/3p-libpng</string>
+      <string>https://github.com/AlchemyViewer/3p-libpng</string>
       <key>description</key>
       <string>PNG Reference library</string>
     </map>

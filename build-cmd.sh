@@ -62,23 +62,24 @@ restore_dylibs ()
 # right line, and expr to extract just the version number. Because of that, we
 # state the relevant symbol name twice. Preface it with ".*" because expr
 # implicitly anchors its search to the start of the input string.
-# symbol="PNG_LIBPNG_VER_STRING"
-# version="$(expr "$(grep "$symbol" libpng/png.h)" : ".*$symbol \"\([^\"]*\)\"")"
-echo "1.6.42" > "${stage}/VERSION.txt"
-
-# Setup staging dirs
-mkdir -p "$stage/include/libpng16"
-mkdir -p "$stage/lib/debug"
-mkdir -p "$stage/lib/release"
+symbol="#define PNG_LIBPNG_VER_STRING"
+version="$(expr "$(grep "$symbol" libpng/png.h)" : ".*$symbol \"\([^\"]*\)\"")"
+echo "${version}" > "${stage}/VERSION.txt"
 
 pushd "$PNG_SOURCE_DIR"
     case "$AUTOBUILD_PLATFORM" in
 
         windows*)
             load_vsvars
+
+            # Setup staging dirs
+            mkdir -p "$stage/include/libpng16"
+            mkdir -p "$stage/lib/debug"
+            mkdir -p "$stage/lib/release"
+
             mkdir -p "build_debug"
             pushd "build_debug"
-                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
+                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_BUILD_ZLIB=ON \
@@ -97,7 +98,7 @@ pushd "$PNG_SOURCE_DIR"
 
             mkdir -p "build_release"
             pushd "build_release"
-                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
+                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_BUILD_ZLIB=ON \
@@ -120,94 +121,32 @@ pushd "$PNG_SOURCE_DIR"
         ;;
 
         darwin*)
-            # Setup osx sdk platform
-            SDKNAME="macosx"
-            export SDKROOT=$(xcodebuild -version -sdk ${SDKNAME} Path)
-
-            # Deploy Targets
-            X86_DEPLOY=10.15
-            ARM64_DEPLOY=11.0
-
             # Setup build flags
-            ARCH_FLAGS_X86="-arch x86_64 -mmacosx-version-min=${X86_DEPLOY} -isysroot ${SDKROOT} -msse4.2"
-            ARCH_FLAGS_ARM64="-arch arm64 -mmacosx-version-min=${ARM64_DEPLOY} -isysroot ${SDKROOT}"
-            DEBUG_COMMON_FLAGS="-O0 -g -fPIC -DPIC"
-            RELEASE_COMMON_FLAGS="-O3 -g -fPIC -DPIC -fstack-protector-strong"
-            DEBUG_CFLAGS="$DEBUG_COMMON_FLAGS"
-            RELEASE_CFLAGS="$RELEASE_COMMON_FLAGS"
-            DEBUG_CXXFLAGS="$DEBUG_COMMON_FLAGS -std=c++17"
-            RELEASE_CXXFLAGS="$RELEASE_COMMON_FLAGS -std=c++17"
-            DEBUG_CPPFLAGS="-DPIC"
-            RELEASE_CPPFLAGS="-DPIC"
-            DEBUG_LDFLAGS="-Wl,-headerpad_max_install_names"
-            RELEASE_LDFLAGS="-Wl,-headerpad_max_install_names"
+            C_OPTS_X86="-arch x86_64 $LL_BUILD_RELEASE_CFLAGS"
+            C_OPTS_ARM64="-arch arm64 $LL_BUILD_RELEASE_CFLAGS"
+            CXX_OPTS_X86="-arch x86_64 $LL_BUILD_RELEASE_CXXFLAGS"
+            CXX_OPTS_ARM64="-arch arm64 $LL_BUILD_RELEASE_CXXFLAGS"
+            LINK_OPTS_X86="-arch x86_64 $LL_BUILD_RELEASE_LINKER"
+            LINK_OPTS_ARM64="-arch arm64 $LL_BUILD_RELEASE_LINKER"
 
-            # x86 Deploy Target
-            export MACOSX_DEPLOYMENT_TARGET=${X86_DEPLOY}
+            # deploy target
+            export MACOSX_DEPLOYMENT_TARGET=${LL_BUILD_DARWIN_BASE_DEPLOY_TARGET}
 
-            mkdir -p "build_debug_x86"
-            pushd "build_debug_x86"
-                CFLAGS="$ARCH_FLAGS_X86 $DEBUG_CFLAGS" \
-                CXXFLAGS="$ARCH_FLAGS_X86 $DEBUG_CXXFLAGS" \
-                CPPFLAGS="$ARCH_FLAGS_X86 $DEBUG_CPPFLAGS" \
-                LDFLAGS="$ARCH_FLAGS_X86 $DEBUG_LDFLAGS" \
-                cmake .. -GXcode -DBUILD_SHARED_LIBS:BOOL=OFF \
-                    -DCMAKE_C_FLAGS="$ARCH_FLAGS_X86 $DEBUG_CFLAGS" \
-                    -DCMAKE_CXX_FLAGS="$ARCH_FLAGS_X86 $DEBUG_CXXFLAGS" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL="0" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS=YES \
-                    -DCMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT=dwarf \
-                    -DCMAKE_XCODE_ATTRIBUTE_LLVM_LTO=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_X86_VECTOR_INSTRUCTIONS=sse4.2 \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD="c++17" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY="libc++" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
-                    -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64 \
-                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
-                    -DCMAKE_OSX_SYSROOT=${SDKROOT} \
-                    -DCMAKE_MACOSX_RPATH=YES \
-                    -DCMAKE_INSTALL_PREFIX="$stage/debug_x86" \
-                    -DPNG_SHARED=ON \
-                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARIES="${stage}/packages/lib/debug/libz.a"
-
-                cmake --build . --config Debug
-                cmake --install . --config Debug
-
-                # conditionally run unit tests
-                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    ctest -C Debug
-                fi
-            popd
+            # Setup staging dirs
+            mkdir -p "$stage/include/libpng16"
+            mkdir -p "$stage/lib/release"
 
             mkdir -p "build_release_x86"
             pushd "build_release_x86"
-                CFLAGS="$ARCH_FLAGS_X86 $RELEASE_CFLAGS" \
-                CXXFLAGS="$ARCH_FLAGS_X86 $RELEASE_CXXFLAGS" \
-                CPPFLAGS="$ARCH_FLAGS_X86 $RELEASE_CPPFLAGS" \
-                LDFLAGS="$ARCH_FLAGS_X86 $RELEASE_LDFLAGS" \
-                cmake .. -GXcode -DBUILD_SHARED_LIBS:BOOL=OFF \
-                    -DCMAKE_C_FLAGS="$ARCH_FLAGS_X86 $RELEASE_CFLAGS" \
-                    -DCMAKE_CXX_FLAGS="$ARCH_FLAGS_X86 $RELEASE_CXXFLAGS" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL="3" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS=YES \
-                    -DCMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT=dwarf \
-                    -DCMAKE_XCODE_ATTRIBUTE_LLVM_LTO=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_X86_VECTOR_INSTRUCTIONS=sse4.2 \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD="c++17" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY="libc++" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+                CFLAGS="$C_OPTS_X86" \
+                CXXFLAGS="$CXX_OPTS_X86" \
+                LDFLAGS="$LINK_OPTS_X86" \
+                cmake .. -G Ninja -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_C_FLAGS="$C_OPTS_X86" \
+                    -DCMAKE_CXX_FLAGS="$CXX_OPTS_X86" \
                     -DCMAKE_OSX_ARCHITECTURES:STRING=x86_64 \
                     -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
-                    -DCMAKE_OSX_SYSROOT=${SDKROOT} \
                     -DCMAKE_MACOSX_RPATH=YES \
                     -DCMAKE_INSTALL_PREFIX="$stage/release_x86" \
                     -DPNG_SHARED=ON \
@@ -225,71 +164,17 @@ pushd "$PNG_SOURCE_DIR"
                 fi
             popd
 
-            # ARM64 Deploy Target
-            export MACOSX_DEPLOYMENT_TARGET=${ARM64_DEPLOY}
-
-            mkdir -p "build_debug_arm64"
-            pushd "build_debug_arm64"
-                CFLAGS="$ARCH_FLAGS_ARM64 $DEBUG_CFLAGS" \
-                CXXFLAGS="$ARCH_FLAGS_ARM64 $DEBUG_CXXFLAGS" \
-                CPPFLAGS="$ARCH_FLAGS_ARM64 $DEBUG_CPPFLAGS" \
-                LDFLAGS="$ARCH_FLAGS_ARM64 $DEBUG_LDFLAGS" \
-                cmake .. -GXcode -DBUILD_SHARED_LIBS:BOOL=OFF \
-                    -DCMAKE_C_FLAGS="$ARCH_FLAGS_ARM64 $DEBUG_CFLAGS" \
-                    -DCMAKE_CXX_FLAGS="$ARCH_FLAGS_ARM64 $DEBUG_CXXFLAGS" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL="0" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS=YES \
-                    -DCMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT=dwarf \
-                    -DCMAKE_XCODE_ATTRIBUTE_LLVM_LTO=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD="c++17" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY="libc++" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
-                    -DCMAKE_OSX_ARCHITECTURES:STRING=arm64 \
-                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
-                    -DCMAKE_OSX_SYSROOT=${SDKROOT} \
-                    -DCMAKE_MACOSX_RPATH=YES \
-                    -DCMAKE_INSTALL_PREFIX="$stage/debug_arm64" \
-                    -DPNG_SHARED=ON \
-                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_ARM_NEON=on \
-                    -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARIES="${stage}/packages/lib/debug/libz.a"
-
-                cmake --build . --config Debug
-                cmake --install . --config Debug
-
-                # conditionally run unit tests
-                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    ctest -C Debug
-                fi
-            popd
-
             mkdir -p "build_release_arm64"
             pushd "build_release_arm64"
-                CFLAGS="$ARCH_FLAGS_ARM64 $RELEASE_CFLAGS" \
-                CXXFLAGS="$ARCH_FLAGS_ARM64 $RELEASE_CXXFLAGS" \
-                CPPFLAGS="$ARCH_FLAGS_ARM64 $RELEASE_CPPFLAGS" \
-                LDFLAGS="$ARCH_FLAGS_ARM64 $RELEASE_LDFLAGS" \
-                cmake .. -GXcode -DBUILD_SHARED_LIBS:BOOL=OFF \
-                    -DCMAKE_C_FLAGS="$ARCH_FLAGS_ARM64 $RELEASE_CFLAGS" \
-                    -DCMAKE_CXX_FLAGS="$ARCH_FLAGS_ARM64 $RELEASE_CXXFLAGS" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL="3" \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS=YES \
-                    -DCMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT=dwarf \
-                    -DCMAKE_XCODE_ATTRIBUTE_LLVM_LTO=NO \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD="c++17" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY="libc++" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO" \
-                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+                CFLAGS="$C_OPTS_ARM64" \
+                CXXFLAGS="$CXX_OPTS_ARM64" \
+                LDFLAGS="$LINK_OPTS_ARM64" \
+                cmake .. -G Ninja -DBUILD_SHARED_LIBS:BOOL=OFF \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_C_FLAGS="$C_OPTS_ARM64" \
+                    -DCMAKE_CXX_FLAGS="$CXX_OPTS_ARM64" \
                     -DCMAKE_OSX_ARCHITECTURES:STRING=arm64 \
                     -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
-                    -DCMAKE_OSX_SYSROOT=${SDKROOT} \
                     -DCMAKE_MACOSX_RPATH=YES \
                     -DCMAKE_INSTALL_PREFIX="$stage/release_arm64" \
                     -DPNG_SHARED=ON \
@@ -309,7 +194,6 @@ pushd "$PNG_SOURCE_DIR"
             popd
 
             # create fat libraries
-            lipo -create ${stage}/debug_x86/lib/libpng16d.a ${stage}/debug_arm64/lib/libpng16d.a -output ${stage}/lib/debug/libpng16d.a
             lipo -create ${stage}/release_x86/lib/libpng16.a ${stage}/release_arm64/lib/libpng16.a -output ${stage}/lib/release/libpng16.a
 
             # copy headers
@@ -330,18 +214,11 @@ pushd "$PNG_SOURCE_DIR"
             # So, clear out bits that shouldn't affect our configure-directed build
             # but which do nonetheless.
             #
-            unset DISTCC_HOSTS CC CXX CFLAGS CPPFLAGS CXXFLAGS
+            unset DISTCC_HOSTS CFLAGS CPPFLAGS CXXFLAGS
 
-            # Default target per autobuild build --address-size
-            opts="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE}"
-			DEBUG_COMMON_FLAGS="$opts -Og -g -fPIC -DPIC"
-			RELEASE_COMMON_FLAGS="$opts -O3 -g -fPIC -DPIC -fstack-protector-strong -D_FORTIFY_SOURCE=2"
-			DEBUG_CFLAGS="$DEBUG_COMMON_FLAGS"
-			RELEASE_CFLAGS="$RELEASE_COMMON_FLAGS"
-            DEBUG_CXXFLAGS="$DEBUG_COMMON_FLAGS -std=c++17"
-			RELEASE_CXXFLAGS="$RELEASE_COMMON_FLAGS -std=c++17"
-            DEBUG_CPPFLAGS="-DPIC"
-			RELEASE_CPPFLAGS="-DPIC"
+            # Default target per --address-size
+            opts_c="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE $LL_BUILD_RELEASE_CFLAGS}"
+            opts_cxx="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE $LL_BUILD_RELEASE_CXXFLAGS}"
 
             # Handle any deliberate platform targeting
             if [ -z "${TARGET_CPPFLAGS:-}" ]; then
@@ -361,60 +238,30 @@ pushd "$PNG_SOURCE_DIR"
                 fi
             done
 
-            mkdir -p "build_debug"
-            pushd "build_debug"
-                CFLAGS="$DEBUG_CFLAGS" \
-                CXXFLAGS="$DEBUG_CXXFLAGS" \
-                CPPFLAGS="$DEBUG_CPPFLAGS" \
-                cmake .. -GNinja -DBUILD_SHARED_LIBS:BOOL=OFF \
-                    -DCMAKE_BUILD_TYPE="Debug" \
-                    -DCMAKE_C_FLAGS="$DEBUG_CFLAGS" \
-                    -DCMAKE_INSTALL_PREFIX="$stage/debug" \
-                    -DPNG_SHARED=OFF \
-                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARIES="${stage}/packages/lib/debug/libz.a"
-
-                cmake --build . --config Debug
-                cmake --install . --config Debug
-
-                # conditionally run unit tests
-                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    ctest -C Debug
-                fi
-            popd
-
             mkdir -p "build_release"
             pushd "build_release"
-                CFLAGS="$RELEASE_CFLAGS" \
-                CXXFLAGS="$RELEASE_CXXFLAGS" \
-                CPPFLAGS="$RELEASE_CPPFLAGS" \
+                CFLAGS="$opts_c" \
+                CXXFLAGS="$opts_cxx" \
                 cmake .. -GNinja -DBUILD_SHARED_LIBS:BOOL=OFF \
                     -DCMAKE_BUILD_TYPE="Release" \
-                    -DCMAKE_C_FLAGS="$RELEASE_CFLAGS" \
-                    -DCMAKE_INSTALL_PREFIX="$stage/release" \
+                    -DCMAKE_C_FLAGS="$opts_c" \
+                    -DCMAKE_CXX_FLAGS="$opts_cxx" \
+                    -DCMAKE_INSTALL_PREFIX="$stage" \
                     -DPNG_SHARED=OFF \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DPNG_BUILD_ZLIB=ON \
-                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include/zlib" \
-                    -DZLIB_LIBRARIES="${stage}/packages/lib/release/libz.a"
+                    -DZLIB_INCLUDE_DIRS="${stage}/packages/include" \
+                    -DZLIB_LIBRARIES="${stage}/packages/lib/libz.a"
 
                 cmake --build . --config Release
-                cmake --install . --config Release
 
                 # conditionally run unit tests
                 if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
                     ctest -C Release
                 fi
+
+                cmake --install . --config Release
             popd
-
-            # Copy libraries
-            cp -a ${stage}/debug/lib/*.a ${stage}/lib/debug/
-            cp -a ${stage}/release/lib/*.a ${stage}/lib/release/
-
-            # copy headers
-            mv $stage/release/include/libpng16/* $stage/include/libpng16
         ;;
     esac
     mkdir -p "$stage/LICENSES"
