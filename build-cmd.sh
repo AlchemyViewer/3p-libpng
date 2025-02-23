@@ -34,14 +34,43 @@ pushd "$PNG_SOURCE_DIR"
         windows*)
             load_vsvars
 
-            opts="$(replace_switch /Zi /Z7 $LL_BUILD_RELEASE)"
-            plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
+            mkdir -p "build_debug"
+            pushd "build_debug"
+                opts="$(replace_switch /Zi /Z7 $LL_BUILD_DEBUG)"
+                plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
 
-            mkdir -p "build"
-            pushd "build"
+                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+                    -DCMAKE_C_FLAGS:STRING="$plainopts" \
+                    -DCMAKE_CXX_FLAGS:STRING="$opts" \
+                    -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
+                    -DPNG_SHARED=ON \
+                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                    -DZLIB_INCLUDE_DIR="$(cygpath -m "$stage/packages/include/zlib-ng/")" \
+                    -DZLIB_LIBRARY="$(cygpath -m "$stage/packages/lib/debug/zlibd.lib")" \
+                    -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage)
+
+                cmake --build . --config Debug --parallel $AUTOBUILD_CPU_COUNT
+
+                # conditionally run unit tests
+                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                    ctest -C Debug --parallel $AUTOBUILD_CPU_COUNT
+                fi
+
+                cmake --install . --config Debug
+
+                mkdir -p $stage/lib/debug/
+                mv $stage/lib/libpng16_staticd.lib "$stage/lib/debug/libpng16d.lib"
+            popd
+
+            mkdir -p "build_release"
+            pushd "build_release"
+                opts="$(replace_switch /Zi /Z7 $LL_BUILD_RELEASE)"
+                plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
+
                 cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_C_FLAGS:STRING="$plainopts" \
                     -DCMAKE_CXX_FLAGS:STRING="$opts" \
+                    -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
                     -DPNG_SHARED=ON \
                     -DPNG_HARDWARE_OPTIMIZATIONS=ON \
                     -DZLIB_INCLUDE_DIR="$(cygpath -m "$stage/packages/include/zlib-ng/")" \
