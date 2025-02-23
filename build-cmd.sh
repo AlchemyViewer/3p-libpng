@@ -39,7 +39,7 @@ pushd "$PNG_SOURCE_DIR"
                 opts="$(replace_switch /Zi /Z7 $LL_BUILD_DEBUG)"
                 plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
 
-                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_CONFIGURATION_TYPES=Debug \
                     -DCMAKE_C_FLAGS:STRING="$plainopts" \
                     -DCMAKE_CXX_FLAGS:STRING="$opts" \
                     -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
@@ -67,7 +67,7 @@ pushd "$PNG_SOURCE_DIR"
                 opts="$(replace_switch /Zi /Z7 $LL_BUILD_RELEASE)"
                 plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
 
-                cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_CONFIGURATION_TYPES=Release \
                     -DCMAKE_C_FLAGS:STRING="$plainopts" \
                     -DCMAKE_CXX_FLAGS:STRING="$opts" \
                     -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
@@ -105,7 +105,7 @@ pushd "$PNG_SOURCE_DIR"
                     CFLAGS="$cc_opts" \
                     CXXFLAGS="$opts" \
                     LDFLAGS="$ld_opts" \
-                    cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                    cmake .. -G "Xcode" -DCMAKE_CONFIGURATION_TYPES=Release \
                         -DCMAKE_C_FLAGS:STRING="$cc_opts" \
                         -DCMAKE_CXX_FLAGS:STRING="$opts" \
                         -DPNG_SHARED=ON \
