@@ -4,11 +4,11 @@
 
 ## Submodules
 
-This repository vendors boost using submodules. Be sure to pull them when cloning or updating this repository.
+This repository vendors libpng using submodules. Be sure to pull them when cloning or updating this repository.
 
 Fresh clone:
 ```
-git clone --recurse-submodules git@github.com:secondlife/3p-zlib-ng.git
+git clone --recurse-submodules https://github.com/AlchemyViewer/3p-libpng.git
 ```
 
 Existing checkout:
