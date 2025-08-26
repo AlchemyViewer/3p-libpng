@@ -144,8 +144,10 @@
           </map>
           <key>manifest</key>
           <array>
-            <string>lib/release/libpng16.a</string>
-            <string>lib/release/libpng.a</string>
+            <string>lib/sse/release/libpng16.a</string>
+            <string>lib/sse/release/libpng.a</string>
+            <string>lib/avx2/release/libpng16.a</string>
+            <string>lib/avx2/release/libpng.a</string>
           </array>
           <key>build_directory</key>
           <string>stage</string>
@@ -169,8 +171,12 @@
           </map>
           <key>manifest</key>
           <array>
-            <string>lib/debug/libpng16d.lib</string>
-            <string>lib/release/libpng16.lib</string>
+            <string>lib/sse/debug/libpng16d.lib</string>
+            <string>lib/avx2/debug/libpng16d.lib</string>
+            <string>lib/arm64/debug/libpng16d.lib</string>
+            <string>lib/sse/release/libpng16.lib</string>
+            <string>lib/avx2/release/libpng16.lib</string>
+            <string>lib/arm64/release/libpng16.lib</string>
           </array>
           <key>build_directory</key>
           <string>stage</string>

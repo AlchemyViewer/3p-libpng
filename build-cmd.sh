@@ -34,61 +34,78 @@ pushd "$PNG_SOURCE_DIR"
         windows*)
             load_vsvars
 
-            mkdir -p "build_debug"
-            pushd "build_debug"
-                opts="$(replace_switch /Zi /Z7 $LL_BUILD_DEBUG)"
-                plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
-
-                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_CONFIGURATION_TYPES=Debug \
-                    -DCMAKE_C_FLAGS:STRING="$plainopts" \
-                    -DCMAKE_CXX_FLAGS:STRING="$opts" \
-                    -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
-                    -DPNG_SHARED=ON \
-                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DZLIB_INCLUDE_DIR="$(cygpath -m "$stage/packages/include/zlib-ng/")" \
-                    -DZLIB_LIBRARY="$(cygpath -m "$stage/packages/lib/debug/zlibd.lib")" \
-                    -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage)
-
-                cmake --build . --config Debug --parallel $AUTOBUILD_CPU_COUNT
-
-                # conditionally run unit tests
-                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    ctest -C Debug --parallel $AUTOBUILD_CPU_COUNT
+            for arch in sse avx2 arm64 ; do
+                platform_target="x64"
+                if [[ "$arch" == "arm64" ]]; then
+                    platform_target="ARM64"
                 fi
 
-                cmake --install . --config Debug
+                mkdir -p "build_debug_$arch"
+                pushd "build_debug_$arch"
+                    opts="$(replace_switch /Zi /Z7 $LL_BUILD_DEBUG)"
+                    if [[ "$arch" == "avx2" ]]; then
+                        opts="$(replace_switch /arch:SSE4.2 /arch:AVX2 $opts)"
+                    elif [[ "$arch" == "arm64" ]]; then
+                        opts="$(remove_switch /arch:SSE4.2 $opts)"
+                    fi
+                    plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
 
-                mkdir -p $stage/lib/debug/
-                mv $stage/lib/libpng16_staticd.lib "$stage/lib/debug/libpng16d.lib"
-            popd
+                    cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$platform_target" -DCMAKE_CONFIGURATION_TYPES=Debug \
+                        -DCMAKE_C_FLAGS:STRING="$plainopts" \
+                        -DCMAKE_CXX_FLAGS:STRING="$opts" \
+                        -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
+                        -DPNG_SHARED=ON \
+                        -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                        -DZLIB_INCLUDE_DIR="$(cygpath -m "$stage/packages/include/zlib-ng/")" \
+                        -DZLIB_LIBRARY="$(cygpath -m "$stage/packages/lib/$arch/debug/zlibd.lib")" \
+                        -DCMAKE_INSTALL_PREFIX=$(cygpath -m "$stage") \
+                        -DCMAKE_INSTALL_LIBDIR="$(cygpath -m "$stage/lib/$arch/debug")"
 
-            mkdir -p "build_release"
-            pushd "build_release"
-                opts="$(replace_switch /Zi /Z7 $LL_BUILD_RELEASE)"
-                plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
+                    cmake --build . --config Debug --parallel $AUTOBUILD_CPU_COUNT
 
-                cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$AUTOBUILD_WIN_VSPLATFORM" -DCMAKE_CONFIGURATION_TYPES=Release \
-                    -DCMAKE_C_FLAGS:STRING="$plainopts" \
-                    -DCMAKE_CXX_FLAGS:STRING="$opts" \
-                    -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
-                    -DPNG_SHARED=ON \
-                    -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                    -DZLIB_INCLUDE_DIR="$(cygpath -m "$stage/packages/include/zlib-ng/")" \
-                    -DZLIB_LIBRARY="$(cygpath -m "$stage/packages/lib/release/zlib.lib")" \
-                    -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage)
+                    # conditionally run unit tests
+                    if [[ "${DISABLE_UNIT_TESTS:-0}" == "0" && "$arch" != "arm64" ]]; then
+                        ctest -C Debug --parallel $AUTOBUILD_CPU_COUNT
+                    fi
 
-                cmake --build . --config Release --parallel $AUTOBUILD_CPU_COUNT
+                    cmake --install . --config Debug
 
-                # conditionally run unit tests
-                if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                    ctest -C Release --parallel $AUTOBUILD_CPU_COUNT
-                fi
+                    mv $stage/lib/$arch/debug/libpng16_staticd.lib "$stage/lib/$arch/debug/libpng16d.lib"
+                popd
 
-                cmake --install . --config Release
+                mkdir -p "build_release_$arch"
+                pushd "build_release_$arch"
+                    opts="$(replace_switch /Zi /Z7 $LL_BUILD_RELEASE)"
+                    if [[ "$arch" == "avx2" ]]; then
+                        opts="$(replace_switch /arch:SSE4.2 /arch:AVX2 $opts)"
+                    elif [[ "$arch" == "arm64" ]]; then
+                        opts="$(remove_switch /arch:SSE4.2 $opts)"
+                    fi
+                    plainopts="$(remove_switch /GR $(remove_cxxstd $opts))"
 
-                mkdir -p $stage/lib/release/
-                mv $stage/lib/libpng16_static.lib "$stage/lib/release/libpng16.lib"
-            popd
+                    cmake .. -G "$AUTOBUILD_WIN_CMAKE_GEN" -A "$platform_target" -DCMAKE_CONFIGURATION_TYPES=Release \
+                        -DCMAKE_C_FLAGS:STRING="$plainopts" \
+                        -DCMAKE_CXX_FLAGS:STRING="$opts" \
+                        -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT="Embedded" \
+                        -DPNG_SHARED=ON \
+                        -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                        -DZLIB_INCLUDE_DIR="$(cygpath -m "$stage/packages/include/zlib-ng/")" \
+                        -DZLIB_LIBRARY="$(cygpath -m "$stage/packages/lib/$arch/release/zlib.lib")" \
+                        -DCMAKE_INSTALL_PREFIX=$(cygpath -m $stage) \
+                        -DCMAKE_INSTALL_LIBDIR="$(cygpath -m "$stage/lib/$arch/release")"
+
+                    cmake --build . --config Release --parallel $AUTOBUILD_CPU_COUNT
+
+                    # conditionally run unit tests
+                    if [[ "${DISABLE_UNIT_TESTS:-0}" == "0" && "$arch" != "arm64" ]]; then
+                        ctest -C Release --parallel $AUTOBUILD_CPU_COUNT
+                    fi
+
+                    cmake --install . --config Release
+
+                    mv $stage/lib/$arch/release/libpng16_static.lib "$stage/lib/$arch/release/libpng16.lib"
+                popd
+            done
         ;;
 
         darwin*)
@@ -134,31 +151,37 @@ pushd "$PNG_SOURCE_DIR"
         ;;
 
         linux*)
-            mkdir -p "build"
-            pushd "build"
+            for arch in sse avx2 ; do
+                # Default target per autobuild build --address-size
+                opts="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE $LL_BUILD_RELEASE}"
+                if [[ "$arch" == "avx2" ]]; then
+                    opts="$(replace_switch -march=x86-64-v2 -march=x86-64-v3 $opts)"
+                fi
 
-            # Default target per AUTOBUILD_ADDRSIZE
-            opts="${TARGET_OPTS:--m$AUTOBUILD_ADDRSIZE $LL_BUILD_RELEASE}"
+                # Release
+                mkdir -p "build_$arch"
+                pushd "build_$arch"
 
-            cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_C_FLAGS:STRING="$(remove_cxxstd $opts)" \
-                -DCMAKE_CXX_FLAGS:STRING="$opts" \
-                -DPNG_SHARED=ON \
-                -DPNG_HARDWARE_OPTIMIZATIONS=ON \
-                -DZLIB_INCLUDE_DIR="$stage/packages/include/zlib-ng/" \
-                -DZLIB_LIBRARY="$stage/packages/lib/release/libz.a" \
-                -DCMAKE_INSTALL_PREFIX="$stage" \
-                -DCMAKE_INSTALL_LIBDIR="$stage/lib/release"
+                    cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                        -DCMAKE_C_FLAGS:STRING="$(remove_cxxstd $opts)" \
+                        -DCMAKE_CXX_FLAGS:STRING="$opts" \
+                        -DPNG_SHARED=ON \
+                        -DPNG_HARDWARE_OPTIMIZATIONS=ON \
+                        -DZLIB_INCLUDE_DIR="$stage/packages/include/zlib-ng/" \
+                        -DZLIB_LIBRARY="$stage/packages/lib/$arch/release/libz.a" \
+                        -DCMAKE_INSTALL_PREFIX="$stage" \
+                        -DCMAKE_INSTALL_LIBDIR="$stage/lib/$arch/release"
 
-            cmake --build . --config Release --parallel $AUTOBUILD_CPU_COUNT
+                    cmake --build . --config Release --parallel $AUTOBUILD_CPU_COUNT
 
-            # conditionally run unit tests
-            if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
-                ctest -C Release --parallel $AUTOBUILD_CPU_COUNT
-            fi
+                    # conditionally run unit tests
+                    if [ "${DISABLE_UNIT_TESTS:-0}" = "0" ]; then
+                        ctest -C Release --parallel $AUTOBUILD_CPU_COUNT
+                    fi
 
-            cmake --install . --config Release
-            popd
+                    cmake --install . --config Release
+                popd
+            done
         ;;
     esac
     mkdir -p "$stage/LICENSES"
